@@ -1,0 +1,160 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+
+public class PersonalEnergyTrackerGUI extends PersonalEnergyTrackerParent {
+    private JFrame frame;
+    private JTextField weightField, heightField, ageField, genderField;
+    private JTextField stepsField, waterField, sleepField, screenField;
+    private JTextArea mealArea, outputArea;
+    private JButton calculateButton;
+
+    public PersonalEnergyTrackerGUI() {
+        frame = new JFrame("Personal Energy Tracker GUI");
+        frame.setSize(600, 600);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLayout(new BorderLayout());
+
+        JPanel inputPanel = new JPanel(new GridLayout(10, 2, 5, 5));
+
+        inputPanel.add(new JLabel("Weight (kg):"));
+        weightField = new JTextField();
+        inputPanel.add(weightField);
+
+        inputPanel.add(new JLabel("Height (cm):"));
+        heightField = new JTextField();
+        inputPanel.add(heightField);
+
+        inputPanel.add(new JLabel("Age:"));
+        ageField = new JTextField();
+        inputPanel.add(ageField);
+
+        inputPanel.add(new JLabel("Gender (male/female):"));
+        genderField = new JTextField();
+        inputPanel.add(genderField);
+
+        inputPanel.add(new JLabel("Steps today:"));
+        stepsField = new JTextField();
+        inputPanel.add(stepsField);
+
+        inputPanel.add(new JLabel("Water intake (glasses):"));
+        waterField = new JTextField();
+        inputPanel.add(waterField);
+
+        inputPanel.add(new JLabel("Sleep hours:"));
+        sleepField = new JTextField();
+        inputPanel.add(sleepField);
+
+        inputPanel.add(new JLabel("Screen time (hours):"));
+        screenField = new JTextField();
+        inputPanel.add(screenField);
+
+        inputPanel.add(new JLabel("Meals log (describe meals):"));
+        mealArea = new JTextArea(3, 20);
+        JScrollPane mealScroll = new JScrollPane(mealArea);
+        inputPanel.add(mealScroll);
+
+        calculateButton = new JButton("Calculate Summary");
+        inputPanel.add(calculateButton);
+
+        frame.add(inputPanel, BorderLayout.NORTH);
+
+        outputArea = new JTextArea(10, 50);
+        outputArea.setEditable(false);
+        JScrollPane outputScroll = new JScrollPane(outputArea);
+        frame.add(outputScroll, BorderLayout.CENTER);
+
+        // Button action
+        calculateButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                calculateSummary();
+            }
+        });
+
+        frame.setVisible(true);
+    }
+
+    private void calculateSummary() {
+        try {
+            double weight = Double.parseDouble(weightField.getText());
+            double height = Double.parseDouble(heightField.getText());
+            int age = Integer.parseInt(ageField.getText());
+            String gender = genderField.getText().trim().toLowerCase();
+
+            double bmr;
+            if (gender.equals("male")) {
+                bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+            } else {
+                bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+            }
+
+            int steps = Integer.parseInt(stepsField.getText());
+            double caloriesBurned = steps * 0.04;
+
+            int glassesWater = Integer.parseInt(waterField.getText());
+            double sleepHours = Double.parseDouble(sleepField.getText());
+            double screenTime = Double.parseDouble(screenField.getText());
+
+            String mealText = mealArea.getText();
+            // Simplified meal analysis - just counts "protein", "carb", "fat", "vegetable" words
+            int protein = countWord(mealText, "protein");
+            int carbs = countWord(mealText, "carb");
+            int fats = countWord(mealText, "fat");
+            int veggies = countWord(mealText, "vegetable");
+
+            double totalScore = Math.min(steps / 10000.0, 1)
+                    + Math.min(caloriesBurned / 500.0, 1)
+                    + Math.min(sleepHours / 8.0, 1)
+                    + Math.max(0, (4.0 - screenTime) / 4.0);
+            double activityPercentage = totalScore * 25;
+
+            StringBuilder output = new StringBuilder();
+            output.append("Your BMR is: ").append(String.format("%.2f", bmr)).append("\n");
+            output.append("Calories burned: ").append(String.format("%.2f", caloriesBurned)).append("\n");
+            output.append("Steps: ").append(steps).append("\n");
+            output.append("Water intake (glasses): ").append(glassesWater).append("\n");
+            output.append("Sleep (hours): ").append(sleepHours).append("\n");
+            output.append("Screen Time (hours): ").append(screenTime).append("\n");
+            output.append("Activity Percentage: ").append(String.format("%.2f", activityPercentage)).append("%\n\n");
+
+            if (protein > 2) output.append("Meal Advice: Too much protein.\n");
+            if (carbs > 2) output.append("Meal Advice: Limit carbs.\n");
+            if (fats > 2) output.append("Meal Advice: Fat intake high.\n");
+            if (veggies < 1) output.append("Meal Advice: Eat more vegetables.\n");
+
+            if (activityPercentage >= 75) {
+                output.append("\nCongrats! You met your energy goal.");
+            } else {
+                output.append("\nTry harder tomorrow to meet your goal.");
+            }
+
+            output.append("\n\n--- Energy Optimization Tips ---\n");
+            if (steps < 5000) output.append("Try to walk more during the day.\n");
+            if (sleepHours < 7) output.append("Ensure 7-8 hours of sleep.\n");
+            if (screenTime > 5) output.append("Reduce screen time to relax your eyes.\n");
+            if (glassesWater < 6) output.append("Drink at least 6-8 glasses of water.\n");
+
+            output.append("\nReminder: Take breaks every hour and stay hydrated!\n");
+            output.append("Syncing with fitness app... Done!\n");
+
+            outputArea.setText(output.toString());
+
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(frame, "Please enter valid numbers in all fields!", "Input Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private int countWord(String text, String word) {
+        int count = 0;
+        String[] tokens = text.toLowerCase().split("\\W+");
+        for (String token : tokens) {
+            if (token.contains(word)) count++;
+        }
+        return count;
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new PersonalEnergyTrackerGUI());
+    }
+}
